@@ -467,3 +467,10 @@ $bytes = Get-Content "logs\bot.log" -Encoding Byte -Raw; ([System.Text.Encoding]
   `D:\Projects\TELEGRAM\aliexpress-coin-bot`, restarted: clean boot, polling
   active (a burst of transient 502/ETIMEDOUT at boot, tolerated as usual).
 - CHAT_CONTEXT §2 path updated. Folder left visible (no hidden attrs).
+
+### 2026-10-20 — Playwright Chromium 1223 missing (manual run returned "0 coins")
+- Root cause: project pins `playwright@1.60.0` (needs Chromium rev 1223 + headless shell 1223), but `%LOCALAPPDATA%\ms-playwright` only held rev 1248 (Playwright 1.64.1, used by other tools) → every `chromium.launch()` threw `Executable doesn't exist ... chromiumheadlessshell-1223`, so all three accounts collected 0 coins.
+- Fix: `node node_modules\playwright\cli.js install chromium` from the project dir → installed `chromium-1223`, `chromium_headless_shell-1223`, `ffmpeg-1011` into the shared cache (rev 1248 left untouched).
+- Verified: smoke launch OK (Chrome 148.0.7778.96), then a read-only live collection: account #2 "MAIN" claimed `Daily Sign-in +3` (balance 2410 → 2453).
+- Accounts #1 "ss" and #3 "3rd acc" hit "Login page — session expired" — separate issue (their cookies expired; re-add via `/addaccount` or the extension). Not a browser problem.
+- No source changes. The running `rtnode.exe` bot resolves the browser path at launch, so it picks up rev 1223 on its next sweep without a restart.
