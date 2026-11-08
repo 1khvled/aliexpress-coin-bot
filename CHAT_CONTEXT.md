@@ -504,3 +504,7 @@ $bytes = Get-Content "logs\bot.log" -Encoding Byte -Raw; ([System.Text.Encoding]
 ### 2026-11-08 - Root cause of 48h expiry: cookies were never persisted
 - collectAll now returns the live jar via opts.onCookies() (never after login wall, requires _m_h5_tk). scheduler + both bot paths persist with saveAccountCookies. Restarted clean PID 21212, pushed 9a942ad.
 
+
+### 2026-11-08 - Bot STOPPED at user request (no autorun, no local run)
+- Disabled the RuntimeHelper scheduled task (was Running) and killed rtnode.exe + start-bg.vbs. No bot process remains. To restart: enable task and start it, or run src\index.js manually.
+
