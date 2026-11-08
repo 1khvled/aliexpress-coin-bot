@@ -639,11 +639,11 @@ function createBot() {
       coins: a.last_coins || 0,
       status:
         a.last_status === "collected"
-          ? "✅"
+          ? "✅ done"
           : a.last_status === "expired"
-            ? "⚠️"
+            ? "⚠️ expired"
             : a.last_status === "new"
-              ? "🆕"
+              ? "🆕 new"
               : "—",
     }));
 
@@ -1062,11 +1062,15 @@ function createBot() {
         }
         if (isSameSession(newFp, sessionFp(oldCookies))) {
           pendingAddAccount.delete(chatId);
-          // Diagnostics only: match mode + cookie counts, NEVER values.
+          // Same AliExpress user = a cookie REFRESH, not a duplicate. Replacing
+          // the stored session is the only way to recover an expired account,
+          // and re-collecting one session twice stays impossible (same row).
+          const freshEnc = encrypt(cookies);
+          db.updateAccountCookies(a.id, String(chatId), freshEnc);
           try {
             const oldFp = sessionFp(oldCookies);
             console.log(
-              `[dup-guard] block add: matches #${a.id} via ` +
+              `[dup-guard] refresh #${a.id} via ` +
                 (newFp.hasId && oldFp.hasId ? "identity" : "fallback-tk") +
                 ` (newN=${cookies.split(";").length} newHasId=${newFp.hasId} ` +
                 `oldHasId=${oldFp.hasId})`,
@@ -1075,12 +1079,11 @@ function createBot() {
           bot.sendMessage(
             chatId,
             [
-              "⚠️ These cookies match your existing account",
-              `*#${a.id}* ${a.alias || "unnamed"}.`,
+              "🔄 *Session refreshed*",
+              `*#${a.id}* ${a.alias || "unnamed"} now uses the new cookies.`,
               "",
-              "Adding them again would double-collect one AliExpress session.",
-              "Remove the old one first (/removeaccount) or paste cookies",
-              "from a DIFFERENT AliExpress account.",
+              "Status reset — the next sweep will try it again.",
+              "Run /collect to test it right now.",
             ].join("\n"),
             { parse_mode: "Markdown" },
           );

@@ -20,6 +20,7 @@ const ACCOUNT_STAGGER_MS = 15000;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RETRY_MS = 60 * 60 * 1000; // backoff when a run logged nothing at all
+const SKIP_ALERT_MS = 24 * 60 * 60 * 1000; // remind about dead sessions once a day
 let currentTimer = null;
 let botInstance = null;
 
@@ -40,12 +41,14 @@ async function runCollectionForChat(chatId) {
   if (!accounts.length) return;
 
   let ran = 0;
+  const skipped = [];
   for (const account of accounts) {
     // A previous run already confirmed this session cannot authenticate.
     // Skip it until the user adds fresh cookies instead of opening Chromium
     // and sending the same failure every day.
     if (account.last_status === 'expired') {
       console.log(`[scheduler] Skipping expired account #${account.id}`);
+      skipped.push(account);
       continue;
     }
 
@@ -101,6 +104,58 @@ async function runCollectionForChat(chatId) {
     // Check if 24-48h marketing deal notification is due for this user
     await checkAndSendMarketingPush(chatId);
   }
+
+  // Never let a dead session go unnoticed: if every account is expired the
+  // sweep does nothing and the bot used to stay silent for weeks. Remind once
+  // a day per chat (hourly retries must not spam).
+  await reportSkippedAccounts(chatId, skipped, ran);
+}
+
+/**
+ * Alert a chat when accounts were skipped because their sessions expired.
+ * Throttled to one reminder per 24h; resets when all accounts work again so
+ * the next expiry alerts immediately.
+ */
+async function reportSkippedAccounts(chatId, skipped, ran) {
+  const key = `expired_alert_${chatId}`;
+  if (!skipped.length) {
+    if (db.getState(key)) db.setState(key, '0');
+    return;
+  }
+
+  const now = Date.now();
+  const last = Number(db.getState(key) || 0);
+  if (Number.isFinite(last) && last > 0 && now - last < SKIP_ALERT_MS) return;
+  db.setState(key, String(now));
+
+  const daysSince = (t) => {
+    const ms = t ? Date.parse(String(t).replace(' ', 'T') + 'Z') : NaN;
+    return Number.isFinite(ms) ? Math.max(0, Math.floor((now - ms) / DAY_MS)) : null;
+  };
+
+  const lines = [];
+  if (ran === 0) {
+    lines.push('🚨 *Collection is DOWN*');
+    lines.push(
+      `All ${skipped.length} account(s) have expired sessions — no coins can be collected.`
+    );
+  } else {
+    lines.push(`⚠️ *${skipped.length} account(s) skipped*`);
+    lines.push('Their sessions expired, so they collected nothing this sweep.');
+  }
+  lines.push('');
+  // Legacy Markdown: strip the few chars that could break the entity parser.
+  const clean = (s) => String(s).replace(/[*_`\[\]]/g, '');
+  for (const a of skipped) {
+    const d = daysSince(a.last_run);
+    lines.push(
+      `• #${a.id} ${clean(a.alias || 'unnamed')} — expired${d === null ? '' : ` ${d}d ago`}`
+    );
+  }
+  lines.push('');
+  lines.push('Fix: /addaccount → paste fresh cookies. Same account is fine — it updates in place.');
+
+  await notify(chatId, lines.join('\n'));
 }
 
 /**

@@ -178,6 +178,18 @@ function updateAccountStatus(id, status, coins = 0) {
   );
 }
 
+/**
+ * Replace an account's cookies with a fresh session (same AliExpress user).
+ * Resets the status so the scheduler stops skipping it on the next sweep.
+ */
+function updateAccountCookies(id, chatId, cookiesEnc) {
+  return runSql(
+    "UPDATE accounts SET cookies_enc = ?, last_status = 'new', last_coins = 0, last_run = NULL " +
+      'WHERE id = ? AND chat_id = ?',
+    [cookiesEnc, id, chatId]
+  );
+}
+
 // ─── Collection Logs ───────────────────────────────────
 
 function addLog(accountId, coinsEarned, tasksCompleted, error = null) {
@@ -287,6 +299,15 @@ function setMarketingState(key, value) {
   return runSql('INSERT INTO marketing_state (key, value) VALUES (?, ?)', [key, String(value)]);
 }
 
+// Generic bot state (same key/value table as marketing state, no promo semantics).
+function getState(key) {
+  return getMarketingState(key);
+}
+
+function setState(key, value) {
+  return setMarketingState(key, value);
+}
+
 // ─── Cleanup ───────────────────────────────────────────
 
 function close() {
@@ -307,6 +328,7 @@ module.exports = {
   getAccountsByChat,
   getAllAccounts,
   updateAccountStatus,
+  updateAccountCookies,
   addLog,
   getTodayLogs,
   getRecentLogs,
@@ -318,5 +340,7 @@ module.exports = {
   updateSettings,
   getMarketingState,
   setMarketingState,
+  getState,
+  setState,
   close,
 };
