@@ -474,3 +474,29 @@ $bytes = Get-Content "logs\bot.log" -Encoding Byte -Raw; ([System.Text.Encoding]
 - Verified: smoke launch OK (Chrome 148.0.7778.96), then a read-only live collection: account #2 "MAIN" claimed `Daily Sign-in +3` (balance 2410 → 2453).
 - Accounts #1 "ss" and #3 "3rd acc" hit "Login page — session expired" — separate issue (their cookies expired; re-add via `/addaccount` or the extension). Not a browser problem.
 - No source changes. The running `rtnode.exe` bot resolves the browser path at launch, so it picks up rev 1223 on its next sweep without a restart.
+
+### 2026-11-08 - Bot had been DEAD for 19 days (silent expiry) + two product fixes
+- User reported "bot completely broke, they changed how coins are reclaimed".
+  Live check of all three stored sessions: the coin page returns a LOGIN WALL
+  (COINS / Log in, no #signButton). So this is not a changed claim flow - the
+  cookies died. Last real runs: #2 expired 2026-10-20, #5 on 2026-10-21,
+  #3 on 2026-10-23. The scheduler has been skipping all three every hour since,
+  writing only "Sweep logged nothing - retrying in 1h" to the log. No alert.
+- Correction to the 70 story: collection_logs show #3 MAIN collected +70 on
+  2026-10-19 (and +40 on 2026-10-21). The user's 70 was real and recent; the
+  earlier "streak day 29 / Sep 25" explanation was wrong.
+- Fix 1 - expiry watchdog: when accounts are skipped as expired, the scheduler
+  now sends a throttled (24h) Telegram alarm: "Collection is DOWN" when nothing
+  can run, or "N account(s) skipped" when partially dead, with per-account age
+  and the /addaccount fix. State resets as soon as all accounts work again.
+- Fix 2 - cookie refresh in place: the duplicate-session guard used to BLOCK
+  re-adding fresh cookies for the same AliExpress user ("remove the old one
+  first"), which made recovery painful. It now replaces the stored cookies on
+  the matching row, resets status to 'new' (and last_run), and confirms
+  "Session refreshed". One session still maps to one row (no double-collect).
+- DB: new updateAccountCookies() + generic getState/setState aliases.
+  /status now prints "expired"/"done"/"new" instead of an icon only.
+- Verified live: restarted clean, the overdue sweep skipped all 3, wrote the
+  alert state key and delivered with no Telegram errors. Pushed 558e4de.
+- Next: user must paste fresh cookies (/addaccount) for the same accounts -
+  they update in place now. Then a live /collect proves the claim flow itself.
