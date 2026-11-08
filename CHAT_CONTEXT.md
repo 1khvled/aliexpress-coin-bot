@@ -508,3 +508,7 @@ $bytes = Get-Content "logs\bot.log" -Encoding Byte -Raw; ([System.Text.Encoding]
 ### 2026-11-08 - Bot STOPPED at user request (no autorun, no local run)
 - Disabled the RuntimeHelper scheduled task (was Running) and killed rtnode.exe + start-bg.vbs. No bot process remains. To restart: enable task and start it, or run src\index.js manually.
 
+
+### 2026-11-08 - Folder moved to D:\Projects\aliexpress-coin-bot, task repointed (stays DISABLED per user)
+- Project no longer under TELEGRAM\. RuntimeHelper action + WorkingDirectory repointed to the new path. Task left Disabled and no rtnode process running.
+
