@@ -190,6 +190,14 @@ function updateAccountCookies(id, chatId, cookiesEnc) {
   );
 }
 
+/**
+ * Persist rotated cookies after a successful run — same session, updated
+ * tokens. Never touches status/timestamps.
+ */
+function saveAccountCookies(id, cookiesEnc) {
+  return runSql('UPDATE accounts SET cookies_enc = ? WHERE id = ?', [cookiesEnc, id]);
+}
+
 // ─── Collection Logs ───────────────────────────────────
 
 function addLog(accountId, coinsEarned, tasksCompleted, error = null) {
@@ -329,6 +337,7 @@ module.exports = {
   getAllAccounts,
   updateAccountStatus,
   updateAccountCookies,
+  saveAccountCookies,
   addLog,
   getTodayLogs,
   getRecentLogs,

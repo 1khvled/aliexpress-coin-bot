@@ -458,6 +458,13 @@ function createBot() {
 
     const result = await collectWithRetry(cookies, {
       alreadyClaimedToday: db.wasClaimedToday(account.id),
+      onCookies: (jar) => {
+        try {
+          db.saveAccountCookies(account.id, encrypt(jar));
+        } catch (err) {
+          console.warn(`[bot] cookie persist failed for #${account.id}: ${err.message}`);
+        }
+      },
     });
 
     if (result.skipped) {
@@ -564,6 +571,13 @@ function createBot() {
 
       const result = await collectWithRetry(cookies, {
         alreadyClaimedToday: db.wasClaimedToday(account.id),
+        onCookies: (jar) => {
+          try {
+            db.saveAccountCookies(account.id, encrypt(jar));
+          } catch (err) {
+            console.warn(`[bot] cookie persist failed for #${account.id}: ${err.message}`);
+          }
+        },
       });
       grandTotal += result.totalCoins;
 

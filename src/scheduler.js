@@ -11,7 +11,7 @@
 
 const db = require('./db');
 const { collectWithRetry } = require('./collector');
-const { decrypt } = require('./crypto');
+const { encrypt, decrypt } = require('./crypto');
 const { formatCoins, formatResultLine, formatTime, sleep, sendResilient } = require('./utils');
 
 // Pause between back-to-back accounts in one sweep (one IP hammering MTOP
@@ -66,6 +66,14 @@ async function runCollectionForChat(chatId) {
 
     const result = await collectWithRetry(cookies, {
       alreadyClaimedToday: db.wasClaimedToday(account.id),
+      // Rotated tokens from the live browser must survive to tomorrow's run.
+      onCookies: (jar) => {
+        try {
+          db.saveAccountCookies(account.id, encrypt(jar));
+        } catch (err) {
+          console.warn(`[scheduler] cookie persist failed for #${account.id}: ${err.message}`);
+        }
+      },
     });
 
     // Update DB

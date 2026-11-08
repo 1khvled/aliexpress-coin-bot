@@ -684,10 +684,13 @@ async function collectAll(cookies, opts = {}) {
   let sources = [];
 
   let browser = null;
+  let collectorCtx = null;
+  let loginWall = false;
   const t0 = Date.now();
   try {
     const lc = await launchContext();
     browser = lc.browser;
+    collectorCtx = lc.ctx;
 
     await lc.ctx.addCookies(mergeLocaleCookies(parseCookies(cookies)));
     const page = await lc.ctx.newPage();
@@ -717,6 +720,7 @@ async function collectAll(cookies, opts = {}) {
     // Session expired → redirected to login
     if (await isLoginPage(page)) {
       console.log("[collector] Login page — session expired");
+      loginWall = true;
       await saveDebug("expired", page);
       results.push({
         task: "Daily Sign-in",
@@ -998,6 +1002,22 @@ async function collectAll(cookies, opts = {}) {
       });
     }
   } finally {
+    // Hand the live cookie jar back to the caller so rotated tokens
+    // (_m_h5_tk, xman_us_t, ...) are persisted. Without this the bot re-injects
+    // the SAME stale jar every day and the session dies within ~48h.
+    // Never save after a login wall: that jar is anonymous and would wipe a
+    // good session.
+    if (collectorCtx && !loginWall && typeof opts.onCookies === "function") {
+      try {
+        const jar = (await collectorCtx.cookies())
+          .filter((c) => String(c.domain || "").endsWith("aliexpress.com"))
+          .map((c) => `${c.name}=${c.value}`)
+          .join("; ");
+        if (jar.includes("_m_h5_tk=")) opts.onCookies(jar);
+      } catch (err) {
+        console.warn("[collector] cookie save skipped:", err.message);
+      }
+    }
     await browser?.close().catch(() => {});
   }
 
