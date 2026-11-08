@@ -500,3 +500,7 @@ $bytes = Get-Content "logs\bot.log" -Encoding Byte -Raw; ([System.Text.Encoding]
   alert state key and delivered with no Telegram errors. Pushed 558e4de.
 - Next: user must paste fresh cookies (/addaccount) for the same accounts -
   they update in place now. Then a live /collect proves the claim flow itself.
+
+### 2026-11-08 - Root cause of 48h expiry: cookies were never persisted
+- collectAll now returns the live jar via opts.onCookies() (never after login wall, requires _m_h5_tk). scheduler + both bot paths persist with saveAccountCookies. Restarted clean PID 21212, pushed 9a942ad.
+
