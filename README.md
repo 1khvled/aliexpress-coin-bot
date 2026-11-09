@@ -21,7 +21,7 @@ Anyone can install this on Windows, Mac, or Linux. No coding required!
 2. Copy and paste this single line, then press **Enter**:
 
 ```bat
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=\"$env:USERPROFILE\Desktop\aliexpress-coin-bot\"; if(!(Get-Command git -EA SilentlyContinue)){winget install -e --id Git.Git --accept-package-agreements --accept-source-agreements}; $env:Path=[System.Environment]::GetEnvironmentVariable('Path','Machine')+';'+[System.Environment]::GetEnvironmentVariable('Path','User'); if(!(Test-Path $d)){git clone https://github.com/1khvled/COIN-BOT-.git $d}; & \"$d\setup.bat\""
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=\"$env:USERPROFILE\Desktop\aliexpress-coin-bot\"; if(!(Get-Command git -EA SilentlyContinue)){winget install -e --id Git.Git --accept-package-agreements --accept-source-agreements}; $env:Path=[System.Environment]::GetEnvironmentVariable('Path','Machine')+';'+[System.Environment]::GetEnvironmentVariable('Path','User'); if(!(Test-Path $d)){git clone https://github.com/1khvled/aliexpress-coin-bot.git $d}; & \"$d\setup.bat\""
 ```
 
 The script automatically installs everything, prompts for your Telegram bot token, and launches!
@@ -30,7 +30,7 @@ The script automatically installs everything, prompts for your Telegram bot toke
 
 ### 🐧 Linux / macOS
 ```bash
-git clone https://github.com/1khvled/COIN-BOT-.git aliexpress-coin-bot
+git clone https://github.com/1khvled/aliexpress-coin-bot.git
 cd aliexpress-coin-bot
 chmod +x setup.sh && ./setup.sh
 ```
